@@ -886,8 +886,8 @@ function drawRider(hipX,hipY,shX,shY,gripX,gripY,bbX,bbY,ped,cfg,now){
   }
   L(hipX,hipY,shX,shY,shirt,2);                          // torso, leaning in
   L(shX,shY,gripX,gripY,shirtD,1); P(gripX,gripY,skin);  // arm + hand
-  // head (5×5), facing right
-  const hx0=shX-1, hy0=shY-10;
+  // head (5×5), facing right — chin rests on the shoulders (no float)
+  const hx0=shX-1, hy0=shY-5;
   R(hx0,hy0,5,5,skin);
   R(hx0,hy0-1,5,2,hair);
   R(hx0,hy0+1,1,3,hair);
