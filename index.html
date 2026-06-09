@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Welcome to SF, Maria 💛</title>
+<style>
+/* ============================================================
+   Procedural pixel-art landscape — scroll-driven canvas demo.
+   Single file, no dependencies.
+
+   CSS LAYOUT
+   - #c        : fixed fullscreen canvas (all the pixel art)
+   - section   : 100vh scroll "stops" (title, 7 landmarks, ending)
+   - .card     : caption cards that slide in per landmark
+   ============================================================ */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-snap-type:y proximity}            /* gentle snap to each stop */
+html,body{background:#16123a}
+body{
+  font-family:"Courier New",ui-monospace,Menlo,monospace;
+  overflow-x:hidden;
+  -webkit-font-smoothing:none;
+}
+#c{
+  position:fixed;inset:0;width:100vw;height:100vh;
+  image-rendering:pixelated;image-rendering:crisp-edges;  /* keep the grid sharp */
+  display:block;
+}
+main{position:relative;z-index:1}
+section{
+  position:relative;
+  height:100vh;height:100svh;
+  scroll-snap-align:start;
+}
+
+/* ---- title screen ---------------------------------------- */
+.hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 18px}
+.hero h1{
+  font-size:clamp(30px,6.4vw,60px);letter-spacing:2px;color:#ffe9c7;
+  text-shadow:0 3px 0 #c05a72,0 6px 0 rgba(34,20,58,.65);
+}
+.hero p{margin-top:16px;font-size:clamp(13px,1.9vw,17px);color:#ffce9e;text-shadow:0 2px 0 rgba(34,20,58,.6)}
+.hint{
+  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+  color:#ffe9c7;font-size:13px;letter-spacing:3px;text-shadow:0 2px 0 rgba(34,20,58,.6);
+  animation:bob 1.1s steps(2,end) infinite;transition:opacity .5s;
+}
+@keyframes bob{0%{transform:translate(-50%,0)}100%{transform:translate(-50%,9px)}}
+body.riding .hint{opacity:0}
+
+/* ---- landmark caption cards ------------------------------- */
+.card{
+  position:absolute;left:7%;bottom:16%;
+  max-width:min(330px,78vw);
+  background:#fff6e4;color:#3c2a44;
+  padding:13px 16px 14px;
+  border:3px solid #3c2a44;
+  box-shadow:5px 5px 0 rgba(22,16,46,.5);
+}
+section:nth-of-type(odd) .card{left:auto;right:7%}
+.card .tod{
+  display:inline-block;font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  color:#fff6e4;background:#c05a72;padding:2px 7px;margin-bottom:7px;
+}
+.card h2{font-size:clamp(15px,2.5vw,21px);letter-spacing:1px;margin-bottom:5px}
+.card p{font-size:13.5px;line-height:1.55}
+/* slide-in reveal (toggled by IntersectionObserver) */
+.card{opacity:0;transform:translateY(26px);transition:opacity .55s ease,transform .55s cubic-bezier(.2,.85,.3,1.25)}
+section.show .card{opacity:1;transform:none}
+
+/* ---- closing message -------------------------------------- */
+.end{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 22px;gap:18px}
+.end h2{font-size:clamp(20px,3.6vw,32px);color:#ffe9c7;letter-spacing:2px;text-shadow:0 3px 0 rgba(10,8,30,.8)}
+.end p{max-width:520px;font-size:clamp(13px,1.9vw,16px);line-height:1.8;color:#cfd6ff;text-shadow:0 2px 0 rgba(10,8,30,.8)}
+.end .sig{color:#ffce9e;font-size:clamp(14px,2vw,17px)}
+.end .pulse{font-size:26px;animation:beat 1.2s steps(2,end) infinite;display:inline-block}
+@keyframes beat{0%{transform:scale(1)}100%{transform:scale(1.22)}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<main>
+  <section class="hero">
+    <h1>Welcome to SF, Maria&nbsp;💛</h1>
+    <p>a little bike ride through my favorite city,<br>from sunrise to starlight. hop on the back seat. 🚲</p>
+    <div class="hint">▼ scroll to ride ▼</div>
+  </section>
+
+  <section><div class="card"><span class="tod">dawn</span><h2>Golden Gate Bridge</h2><p>watch the fog roll out together ☁️</p></div></section>
+  <section><div class="card"><span class="tod">morning</span><h2>Painted Ladies · Alamo Square</h2><p>find the prettiest one 🏡</p></div></section>
+  <section><div class="card"><span class="tod">late morning</span><h2>Lombard Street</h2><p>wiggle down the crookedest street in the world 🌸</p></div></section>
+  <section><div class="card"><span class="tod">midday</span><h2>Ferry Building</h2><p>snack crawl 🥐</p></div></section>
+  <section><div class="card"><span class="tod">afternoon</span><h2>Dolores Park</h2><p>picnic at our spot 🧺</p></div></section>
+  <section><div class="card"><span class="tod">golden hour</span><h2>Lands End · Sutro Baths</h2><p>watch the sun hit the water</p></div></section>
+  <section><div class="card"><span class="tod">night</span><h2>Coit Tower</h2><p>city lights and stars ✨</p></div></section>
+
+  <section class="end">
+    <h2>the end of the ride ✨</h2>
+    <p>Seven stops, one whole day — and honestly, anywhere in this city
+    is my favorite place as long as you're on the back seat.
+    I can't wait to do every single one of these with you for real.</p>
+    <p class="sig">Welcome to San Francisco, Maria.<br>— love, Justin <span class="pulse">💛</span></p>
+  </section>
+</main>
+
+<script>
+"use strict";
+/* ============================================================
+   0. CONFIG — tweak everything here
+   ============================================================ */
+const SECTIONS   = 9;          // title + 7 landmarks + ending
+const SEGS       = SECTIONS-1; // scrollable segments
+const CAM_RANGE  = 7200;       // total camera travel in art-pixels
+const PF_MID     = 0.9;        // parallax: landmarks
+const PF_FAR     = 0.30;       // parallax: far hills
+const PF_FAR2    = 0.45;       // parallax: near ridge
+const PF_CLOUD   = 0.12;       // parallax: clouds
+const DITHER_Q   = 14;         // sky quantization step (bigger = chunkier dither)
+
+/* --- time-of-day keyframes, mapped onto scroll 0..1 ---------
+   K0 predawn  (title)        K5 afternoon (Dolores)
+   K1 dawn     (Golden Gate)  K6 golden    (Lands End)
+   K2 morning  (Ladies)       K7 dusk      (transition)
+   K3 late am  (Lombard)      K8 night     (Coit)
+   K4 midday   (Ferry)        K9 deep night(ending)        */
+const KEYT = [0,.125,.25,.375,.5,.625,.75,.80,.875,1];
+
+/* sky gradients: 6 stops each, top → horizon */
+const SKY_HEX = [
+ ["#1b1840","#3c2a5e","#6e3f6e","#b05c74","#e8896f","#ffc08a"], // predawn
+ ["#35265c","#5e3a72","#9c5276","#d4707a","#f49a6e","#ffd9a0"], // dawn
+ ["#4e6fae","#6f93c8","#94b7da","#bcd2e4","#e2d9c8","#f7e6b8"], // morning
+ ["#3e6fbe","#5f8fce","#85aedd","#aac9e6","#cfdde2","#eee4c2"], // late morning
+ ["#2f6ac2","#4f86d2","#74a5de","#9cc2e8","#c4daee","#e8ecde"], // midday
+ ["#3a66b0","#6688c4","#9aa6c8","#c8b8b4","#e8c498","#ffd98e"], // afternoon
+ ["#414173","#7c5478","#b85f68","#e87f56","#ffae57","#ffe29a"], // golden hour
+ ["#191b44","#33235c","#5c3370","#8e4670","#c45f63","#e88a5e"], // dusk
+ ["#05071e","#0a102e","#121a40","#1c2750","#2a3660","#3c4670"], // night
+ ["#03051a","#070b26","#0d1232","#141c40","#1e2850","#2c3660"], // deep night
+];
+const SKY_STOPP = [0,.20,.40,.58,.76,1]; // vertical position of each stop
+
+/* ground palette per keyframe: [grass, grassShadow, road, roadLine] */
+const GND_HEX = [
+ ["#3a2c50","#2b2140","#46395c","#6e5a80"],
+ ["#553a5c","#402c4c","#5c4668","#8a6a8a"],
+ ["#7da267","#5d8052","#8f8a96","#c8c2cc"],
+ ["#82a868","#628454","#94909c","#d0cad2"],
+ ["#86ac6a","#668856","#9a96a2","#d6d0d8"],
+ ["#84a060","#637e4e","#9a8f96","#d4c8c0"],
+ ["#7c7e52","#5c6042","#8e7a78","#c8a890"],
+ ["#4c4452","#383344","#5a4c5c","#86687c"],
+ ["#222840","#181d32","#2e3450","#4a5070"],
+ ["#1c2238","#13182a","#272c46","#3e4462"],
+];
+/* global daylight brightness per keyframe (shades the landmarks) */
+const BRIGHT = [0.58,0.74,0.97,1.0,1.04,1.0,0.94,0.68,0.5,0.46];
+/* warm tint added at dawn / golden hour */
+const WARMTH = [0.18,0.30,0.06,0.02,0,0.10,0.38,0.26,0.04,0.02];
+
+/* 8x8 Bayer matrix for ordered dithering (values /64) */
+const BAYER = [
+ [ 0,32, 8,40, 2,34,10,42],[48,16,56,24,50,18,58,26],
+ [12,44, 4,36,14,46, 6,38],[60,28,52,20,62,30,54,22],
+ [ 3,35,11,43, 1,33, 9,41],[51,19,59,27,49,17,57,25],
+ [15,47, 7,39,13,45, 5,37],[63,31,55,23,61,29,53,21]];
+
+/* ============================================================
+   1. SMALL UTILITIES
+   ============================================================ */
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,f)=>a+(b-a)*f;
+const hex2rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+const SKYC = SKY_HEX.map(k=>k.map(hex2rgb));
+const GNDC = GND_HEX.map(k=>k.map(hex2rgb));
+
+/* deterministic RNG so art is stable across resizes */
+let _seed=1;
+const srand=s=>{_seed=s;};
+const rnd=()=>{_seed=(_seed*16807)%2147483647;return _seed/2147483647;};
+/* integer hash for speckles / window lights */
+const hash=(x,y)=>{let n=(x*73856093)^(y*19349663);n=(n^(n>>>13))*1274126177;return ((n^(n>>>16))>>>0)%1024;};
+
+/* current keyframe pair + eased blend factor for scroll position t */
+function kfAt(t){
+  let i=0; while(i<KEYT.length-2 && t>KEYT[i+1]) i++;
+  let f=clamp((t-KEYT[i])/(KEYT[i+1]-KEYT[i]),0,1);
+  f=f*f*(3-2*f); // smoothstep — no hard jumps between times of day
+  return [i,f];
+}
+const mixK=(table,i,f,s)=>[
+  lerp(table[i][s][0],table[i+1][s][0],f),
+  lerp(table[i][s][1],table[i+1][s][1],f),
+  lerp(table[i][s][2],table[i+1][s][2],f)];
+
+/* shade a hex color by current daylight (brightness + warm tint) */
+const _hexCache={};
+let _B=1,_W=0;
+function sh(hex,mul=1){
+  let c=_hexCache[hex]||(_hexCache[hex]=hex2rgb(hex));
+  const b=_B*mul;
+  const r=clamp(c[0]*b+_W*70,0,255)|0,
+        g=clamp(c[1]*b+_W*22,0,255)|0,
+        bl=clamp(c[2]*b-_W*12,0,255)|0;
+  return `rgb(${r},${g},${bl})`;
+}
+const rgbs=c=>`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;
+
+/* ============================================================
+   2. CANVAS SETUP — low-res art buffer, scaled up pixel-perfect
+   ============================================================ */
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+const buf=document.createElement("canvas");
+const b=buf.getContext("2d");
+
+let W=0,H=0,S=4,gy=0,skyImg=null,stars=[];
+
+function resize(){
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=Math.round(innerWidth*dpr);
+  canvas.height=Math.round(innerHeight*dpr);
+  // 1 art pixel = S device pixels. Cap the art resolution on small screens
+  // so phones keep the same chunky pixel feel as desktop.
+  S=Math.max(2,Math.round(canvas.width/Math.min(420,innerWidth*0.5)));
+  W=Math.ceil(canvas.width/S);
+  H=Math.ceil(canvas.height/S);
+  buf.width=W; buf.height=H;
+  gy=Math.floor(H*0.72);                        // sky / ground horizon row
+  skyImg=b.createImageData(W,gy);
+  ctx.imageSmoothingEnabled=false;
+  initStars();
+}
+addEventListener("resize",resize);
+
+function initStars(){
+  srand(77);
+  stars=[];
+  const n=Math.floor(W*gy/95);
+  for(let i=0;i<n;i++){
+    stars.push({
+      x:(rnd()*W)|0, y:(rnd()*gy*0.96)|0,
+      z:rnd()<0.12?2:1,                  // a few big stars
+      p:rnd()*6.28, s:0.0015+rnd()*0.003,
+      c:rnd()<0.18?"#ffd9a0":(rnd()<0.3?"#bcd2ff":"#e8ecff")
+    });
+  }
+}
+/* ============================================================
+   3. SKY — the emotional spine.
+   Per-pixel vertical gradient between time-of-day palettes,
+   plus additive sun/moon glow, all ordered-dithered (Bayer 8x8)
+   into a stippled, lo-fi wallpaper look.
+   ============================================================ */
+
+/* sun position along its arc. p<0 / p>1 = below horizon (glow only) */
+function sunState(t){
+  const p=(t-0.04)/0.74;                 // rises just after the title screen
+  if(p<-0.25||p>1.2) return null;
+  const a=Math.sin(clamp(p,0,1)*Math.PI);          // altitude 0..1
+  const x=W*(0.18+0.64*clamp(p,0,1));
+  const y=gy*(1.02-0.92*a);
+  // white-gold at noon → deep orange at the horizon
+  const col=[lerp(255,255,a),lerp(150,238,a),lerp(84,196,a)];
+  return {x,y,a,col,p};
+}
+function moonState(t){
+  if(t<0.76) return null;
+  const q=clamp((t-0.78)/0.2,0,1);
+  return {x:W*(0.74-0.10*q), y:gy*(0.45-0.30*q), a:clamp((t-0.76)/0.08,0,1)};
+}
+
+function renderSky(t,now){
+  const [ki,kf]=kfAt(t);
+  // blend the 6 gradient stops between the two active keyframes
+  const stops=[]; for(let s=0;s<6;s++) stops.push(mixK(SKYC,ki,kf,s));
+
+  const sun=sunState(t), moon=moonState(t);
+  let sx=0,sy=0,sr=0,sg=0,sb=0,glowR2=1,glowA=0,coreR2=0;
+  if(sun){
+    sx=sun.x; sy=sun.y;
+    [sr,sg,sb]=sun.col;
+    // tight halo at noon, huge warm wash near the horizon
+    glowR2=Math.pow(gy*(0.15+0.36*(1-sun.a)),2);
+    glowA=0.28+0.6*(1-sun.a);
+    coreR2=22;
+  }
+  let mx=0,my=0,mGlowR2=1,mA=0;
+  if(moon){ mx=moon.x; my=moon.y; mGlowR2=Math.pow(gy*0.22,2); mA=0.5*moon.a; }
+
+  const d=skyImg.data;
+  let p=0;
+  for(let y=0;y<gy;y++){
+    // row base color from the gradient stops
+    const u=y/gy;
+    let s=0; while(s<4 && u>SKY_STOPP[s+1]) s++;
+    const f=(u-SKY_STOPP[s])/(SKY_STOPP[s+1]-SKY_STOPP[s]);
+    const rr=lerp(stops[s][0],stops[s+1][0],f),
+          rg=lerp(stops[s][1],stops[s+1][1],f),
+          rb=lerp(stops[s][2],stops[s+1][2],f);
+    const brow=BAYER[y&7];
+    for(let x=0;x<W;x++){
+      let r=rr,g=rg,bl=rb;
+      if(sun){
+        const dx=x-sx,dy=(y-sy)*1.25,d2=dx*dx+dy*dy;
+        if(d2<coreR2){ r=sr;g=sg;bl=sb; }            // crisp solid disc
+        else{
+          let gf=1-d2/glowR2;
+          if(gf>0){ gf*=gf*glowA; r+=sr*gf*0.6; g+=sg*gf*0.4; bl+=sb*gf*0.2; }
+        }
+      }
+      if(moon){
+        const dx=x-mx,dy=y-my,d2=dx*dx+dy*dy;
+        if(d2<12.5){ r=224;g=230;bl=242; }
+        else{
+          let gf=1-d2/mGlowR2;
+          if(gf>0){ gf*=gf*mA; r+=170*gf; g+=185*gf; bl+=230*gf; }
+        }
+      }
+      // ordered dithering: quantize each channel with a Bayer threshold
+      const bt=brow[x&7]/64;
+      d[p++]=(clamp(r,0,255)/DITHER_Q+bt|0)*DITHER_Q;
+      d[p++]=(clamp(g,0,255)/DITHER_Q+bt|0)*DITHER_Q;
+      d[p++]=(clamp(bl,0,255)/DITHER_Q+bt|0)*DITHER_Q;
+      d[p++]=255;
+    }
+  }
+  b.putImageData(skyImg,0,0);
+
+  // moon craters (drawn crisp on top of the dithered disc)
+  if(moon&&moon.a>0.5){
+    b.fillStyle="rgb(186,192,210)";
+    b.fillRect(mx-1|0,my-1|0,1,1); b.fillRect(mx+1|0,my+1|0,2,1); b.fillRect(mx|0,my-2|0,1,1);
+  }
+  return {stops,sun,moon,ki,kf};
+}
+
+/* stars fade in at deep dusk (and linger before dawn on the title) */
+function starAlpha(t){
+  return Math.max(clamp((0.06-t)/0.06,0,1)*0.8, clamp((t-0.78)/0.12,0,1));
+}
+function renderStars(t,now){
+  const a=starAlpha(t);
+  if(a<=0.01) return;
+  for(const st of stars){
+    const tw=0.5+0.5*Math.sin(now*st.s+st.p);
+    if(tw<0.25) continue;                       // twinkle: some blink fully off
+    b.globalAlpha=a*tw;
+    b.fillStyle=st.c;
+    b.fillRect(st.x,st.y,st.z,st.z);
+  }
+  b.globalAlpha=1;
+}
+
+/* ============================================================
+   4. CLOUDS — chunky pixel puffs with dithered edges.
+   Normal clouds drift across the whole ride; "fog bank" clouds
+   hug the horizon near the Golden Gate and roll out at dawn.
+   ============================================================ */
+let clouds=[];
+function makeCloudMask(wd,ht){
+  // stamp a few overlapping ellipse puffs into a grid
+  const grid=Array.from({length:ht},()=>new Array(wd).fill(0));
+  const n=4+(rnd()*5|0);
+  for(let i=0;i<n;i++){
+    const cx=wd*(0.15+rnd()*0.7), cy=ht*(0.45+rnd()*0.4),
+          rx=wd*(0.14+rnd()*0.22), ry=ht*(0.25+rnd()*0.3);
+    for(let y=0;y<ht;y++)for(let x=0;x<wd;x++){
+      const dx=(x-cx)/rx, dy=(y-cy)/ry;
+      if(dx*dx+dy*dy<1) grid[y][x]=1;
+    }
+  }
+  // split into solid cells + edge cells (edges get 50% dithered)
+  const solid=[],edge=[];
+  for(let y=0;y<ht;y++)for(let x=0;x<wd;x++){
+    if(!grid[y][x]) continue;
+    const e=!grid[y-1]?.[x]||!grid[y+1]?.[x]||!grid[y][x-1]||!grid[y][x+1];
+    (e?edge:solid).push([x,y]);
+  }
+  return {wd,ht,solid,edge};
+}
+function initClouds(){
+  srand(424242);
+  clouds=[];
+  for(let i=0;i<9;i++) clouds.push({
+    fx:rnd(), fy:0.06+rnd()*0.4, spd:0.0014+rnd()*0.002,
+    mask:makeCloudMask(18+(rnd()*16|0),6+(rnd()*5|0)), fog:false});
+  for(let i=0;i<3;i++) clouds.push({          // GGB fog bank
+    off:-110+i*78, fy:0, spd:0.006+i*0.003,
+    mask:makeCloudMask(46+(rnd()*22|0),7),   fog:true});
+}
+function cloudColors(stops,fy){
+  // tint clouds from the sky palette so they always belong
+  let s=Math.min(4,(fy*6)|0); const f=fy*6-s; if(s>=5){s=4;}
+  const base=[0,1,2].map(c=>lerp(stops[s][c],stops[s+1]?stops[s+1][c]:stops[s][c],f));
+  const lit=base.map((c,i)=>clamp(lerp(c,stops[5][i],0.55)*1.12,0,255));
+  const shd=lit.map(c=>c*0.82);
+  return [rgbs(lit),rgbs(shd)];
+}
+function renderClouds(t,now,stops,camX){
+  const span=W+170;
+  for(const c of clouds){
+    let sx,sy,alpha=0.92;
+    if(c.fog){
+      // anchored near the Golden Gate (landmark 1), rolls out & fades
+      alpha=clamp(1-(t-0.10)/0.16,0,1)*0.85;
+      if(alpha<=0.02) continue;
+      const ggbX=W/2+810-camX*PF_MID;
+      sx=ggbX+c.off+(now*c.spd)%240;
+      sy=gy-26;
+    }else{
+      sx=(((c.fx*span - camX*PF_CLOUD - now*c.spd)%span)+span)%span-85;
+      sy=c.fy*gy;
+    }
+    const [lit,shd]=cloudColors(stops,c.fog?0.85:c.fy);
+    b.globalAlpha=alpha;
+    const m=c.mask, shadeRow=m.ht*0.58;
+    b.fillStyle=lit;
+    for(const [x,y] of m.solid) if(y<shadeRow) b.fillRect(sx+x|0,sy+y|0,1,1);
+    b.fillStyle=shd;
+    for(const [x,y] of m.solid) if(y>=shadeRow) b.fillRect(sx+x|0,sy+y|0,1,1);
+    for(const [x,y] of m.edge){               // dithered fringe
+      if(((sx+x|0)+(sy+y|0))&1) continue;
+      b.fillStyle=y<shadeRow?lit:shd;
+      b.fillRect(sx+x|0,sy+y|0,1,1);
+    }
+    b.globalAlpha=1;
+  }
+}
+
+/* ============================================================
+   5. FAR LAYER — rolling silhouette hills + water at the
+   bay/ocean stops (Golden Gate, Ferry Building, Lands End)
+   ============================================================ */
+const WATER_T=[0.125,0.5,0.75];   // scroll positions where water shows
+function waterAlpha(t){
+  let a=0; for(const c of WATER_T) a=Math.max(a,clamp(1-Math.abs(t-c)*7,0,1));
+  return a;
+}
+const hillH=wx=>10+7*Math.sin(wx*0.011)+5*Math.sin(wx*0.023+2)+3*Math.sin(wx*0.005+5);
+
+let sparkles=[];
+function initSparkles(){
+  srand(99);
+  sparkles=[];
+  for(let i=0;i<46;i++) sparkles.push({fx:rnd(),row:(rnd()*9|0),p:rnd()*6.28,s:0.002+rnd()*0.004});
+}
+initSparkles();
+
+function renderFar(t,now,stops,camX,sun){
+  const wA=waterAlpha(t);
+  const hillEnv=1-wA*0.8;     // hills sink to reveal the water line
+  // two ridges, far → near
+  const ridges=[[PF_FAR,1.0,0.5,9],[PF_FAR2,0.72,0.38,3]];
+  for(const [pf,amp,dk,yo] of ridges){
+    const c=[0,1,2].map(i=>lerp(stops[1][i],stops[5][i],0.3)*dk);
+    b.fillStyle=rgbs(c);
+    for(let x=0;x<W;x++){
+      const h=Math.max(0,hillH(camX*pf+x*1.4)*amp*hillEnv)+yo;
+      b.fillRect(x,gy-h|0,1,h+3|0);
+    }
+  }
+  if(wA>0.02){
+    // water band sits right on the horizon
+    for(let y=-4;y<6;y++){
+      const f=(y+4)/10;
+      const c=[0,1,2].map(i=>lerp(stops[5][i]*0.8,stops[0][i]*0.9+12,f*0.8));
+      b.globalAlpha=wA;
+      b.fillStyle=rgbs(c);
+      b.fillRect(0,gy+y,W,1);
+    }
+    // sun-glitter: brightest in the column under a low sun 🌅
+    const sunLow=sun&&sun.a<0.55?1-sun.a:0;
+    b.fillStyle=rgbs([stops[5][0],stops[5][1],stops[5][2]]);
+    for(const sp of sparkles){
+      const sxp=sp.fx*W;
+      const shine=Math.sin(now*sp.s+sp.p);
+      if(shine<0.35) continue;
+      let w=0.35;
+      if(sun&&sunLow>0){
+        const d=Math.abs(sxp-sun.x);
+        w=clamp(1-d/(W*0.16),0,1)*sunLow+0.12;
+      }
+      b.globalAlpha=wA*shine*w;
+      b.fillRect(sxp|0,gy-3+sp.row,2,1);
+    }
+    b.globalAlpha=1;
+  }
+}
+
+/* ============================================================
+   6. GROUND — grass band, the road the tandem rides on,
+   speckled texture, dashes, foreground strip
+   ============================================================ */
+let roadTop=0,roadBot=0,bikeY=0;
+function renderGround(t,camX,ki,kf){
+  const g1=mixK(GNDC,ki,kf,0), g2=mixK(GNDC,ki,kf,1),
+        rd=mixK(GNDC,ki,kf,2), ln=mixK(GNDC,ki,kf,3);
+  const gh=H-gy;
+  roadTop=gy+Math.floor(gh*0.34);
+  roadBot=gy+Math.floor(gh*0.74);
+  bikeY=Math.floor((roadTop+roadBot)/2)+2;
+
+  b.fillStyle=rgbs(g1); b.fillRect(0,gy+3,W,roadTop-gy-3); // meets the far-layer fill, no gap row
+  b.fillStyle=rgbs(rd); b.fillRect(0,roadTop,W,roadBot-roadTop);
+  b.fillStyle=rgbs(g2); b.fillRect(0,roadBot,W,H-roadBot);
+
+  // road edge lines
+  b.fillStyle=rgbs([rd[0]*0.8,rd[1]*0.8,rd[2]*0.8]);
+  b.fillRect(0,roadTop,W,1); b.fillRect(0,roadBot-1,W,1);
+
+  // center dashes, locked to world-space so they scroll with the ride
+  b.fillStyle=rgbs(ln);
+  const dy=((roadTop+roadBot)>>1)-1;
+  let x=0;
+  while(x<W){
+    const wx=(camX+x)|0, off=((wx%56)+56)%56;
+    if(off<18){ const run=Math.min(18-off,W-x); b.fillRect(x,dy,run,2); x+=run; }
+    else x+=56-off;
+  }
+
+  // grass + sidewalk speckle texture (world-locked hash noise)
+  b.fillStyle=rgbs(g2);
+  for(let y=gy+5;y<roadTop;y+=2)for(let x2=0;x2<W;x2+=3){
+    if(hash((camX+x2)|0,y)<140) b.fillRect(x2,y,1,1);
+  }
+  const fl=["#e8a0b8","#ffd98a","#c8d8f8"];
+  for(let x2=0;x2<W;x2+=5){
+    const wx=(camX+x2)|0;
+    if(hash(wx,3)<70) { b.fillStyle=sh(fl[hash(wx,7)%3]); b.fillRect(x2,gy+6+hash(wx,11)%(roadTop-gy-8),1,1); }
+  }
+  b.fillStyle=rgbs([g2[0]*0.78,g2[1]*0.78,g2[2]*0.78]);
+  for(let y=roadBot+1;y<H;y+=2)for(let x2=0;x2<W;x2+=3){
+    if(hash((camX*1.18+x2)|0,y)<120) b.fillRect(x2,y,1,1);
+  }
+  // darker foreground strip at the very bottom (depth)
+  b.fillStyle=rgbs([g2[0]*0.6,g2[1]*0.6,g2[2]*0.6]);
+  b.fillRect(0,H-4,W,4);
+  for(let x2=0;x2<W;x2+=2){
+    const wx=(camX*1.25+x2)|0;
+    if(hash(wx,5)<150) b.fillRect(x2,H-6-(hash(wx,9)%3),1,3);
+  }
+}
+/* ============================================================
+   7. PIXEL DRAWING HELPERS
+   ============================================================ */
+function R(x,y,w,h,c){ b.fillStyle=c; b.fillRect(x|0,y|0,w|0,h|0); }
+function P(x,y,c){ b.fillStyle=c; b.fillRect(x|0,y|0,1,1); }
+function L(x0,y0,x1,y1,c,t=1){           // Bresenham line, t = thickness
+  x0|=0;y0|=0;x1|=0;y1|=0;
+  const dx=Math.abs(x1-x0),sx=x0<x1?1:-1,dy=-Math.abs(y1-y0),sy=y0<y1?1:-1;
+  let err=dx+dy;
+  b.fillStyle=c;
+  for(;;){
+    b.fillRect(x0,y0,t,t);
+    if(x0===x1&&y0===y1)break;
+    const e2=2*err;
+    if(e2>=dy){err+=dy;x0+=sx;}
+    if(e2<=dx){err+=dx;y0+=sy;}
+  }
+}
+function CIRC(cx,cy,r,c){                 // pixel circle outline
+  b.fillStyle=c;
+  for(let a=0;a<28;a++){
+    const t=a/28*6.2832;
+    b.fillRect(cx+Math.cos(t)*r|0,cy+Math.sin(t)*r|0,1,1);
+  }
+}
+
+/* ============================================================
+   8. LANDMARKS — each draws at (cx = screen center, by = base y)
+   in crisp pixels, shaded by the global daylight via sh().
+   `lit` = 0..1 window-light intensity (night / predawn)
+   ============================================================ */
+
+/* --- 1. Golden Gate Bridge (dawn) --------------------------- */
+function drawGGB(cx,by,now,lit){
+  const deck=by-26, towT=deck-52, tw=[cx-55,cx+55];
+  // roadway
+  R(cx-100,deck,200,4,sh("#b04228")); R(cx-100,deck-1,200,1,sh("#e87848"));
+  // main cables: hang between towers + run down to the ends
+  const cab=sh("#c4502e");
+  for(let i=0;i<=110;i++){
+    const u=i/110, x=lerp(tw[0],tw[1],u);
+    const y=towT+ (1-Math.pow((u-0.5)*2,2))*34;
+    P(x,y,cab);
+    if(i%14===0&&i>0&&i<110) L(x,y,x,deck,sh("#9c3a22"));  // suspenders
+  }
+  for(const s of [-1,1]){
+    const tx=tw[s<0?0:1];
+    for(let i=0;i<=46;i++){
+      const u=i/46;
+      P(lerp(tx,tx+s*45,u),lerp(towT,deck,u*u),cab);
+    }
+  }
+  // towers: stepped art-deco profile with cross braces
+  for(const tx of tw){
+    R(tx-4,towT,8,by-towT,sh("#d4502e"));
+    R(tx+2,towT,2,by-towT,sh("#9c3a22"));      // shadow side
+    R(tx-5,towT,10,3,sh("#e87848"));
+    R(tx-4,towT+14,8,2,sh("#9c3a22"));
+    R(tx-4,towT+30,8,2,sh("#9c3a22"));
+    R(tx-5,deck-6,10,3,sh("#b04228"));
+    if(lit>0){ b.globalAlpha=lit; P(tx-4,towT,"#ffe9a0"); P(tx+3,towT,"#ffe9a0"); b.globalAlpha=1; }
+  }
+}
+
+/* --- 2. Painted Ladies (morning) ---------------------------- */
+const LADY=["#9b8bc4","#7fb3a8","#e0a3b8","#e8d8a8","#a8c0e0"];
+function drawLadies(cx,by,now,lit){
+  for(let i=0;i<5;i++){
+    const hx=cx-62+i*26, hw=24, hh=34+(i%2)*4, ty=by-hh;
+    const cM=sh(LADY[i]), cD=sh(LADY[i],0.74), trim=sh("#fff2e0");
+    R(hx,ty,hw,hh,cM);
+    R(hx+hw-4,ty,4,hh,cD);                       // side shading
+    // gabled roof (narrow at the peak, wide at the eaves)
+    for(let r2=0;r2<7;r2++) R(hx+(6-r2),ty-7+r2,hw-(6-r2)*2,1,sh("#5c4668"));
+    R(hx+3,ty-1,hw-6,1,trim);
+    // bay windows (two floors)
+    for(let f=0;f<2;f++){
+      const wy=ty+5+f*14;
+      for(let wxi=0;wxi<3;wxi++){
+        const wx2=hx+4+wxi*6;
+        R(wx2,wy,4,8,lit>0&&hash(i*7+wxi,f)<700?"#ffd98a":sh("#5e7898",0.9));
+        R(wx2,wy,4,1,trim);
+      }
+    }
+    R(hx+9,by-7,6,7,sh("#4a3550"));              // door
+    R(hx+8,by,8,1,trim);                          // steps
+    P(hx+12,ty-9,trim);                           // roof finial
+  }
+}
+
+/* --- 3. Lombard Street (late morning) ----------------------- */
+function drawLombard(cx,by,now,lit){
+  // the hill
+  const hw=80,hh=66;
+  for(let x=-hw;x<=hw;x++){
+    const h=hh*(1-(x*x)/(hw*hw));
+    // dithered shade boundary so the dark side doesn't cut a hard seam
+    if(h>1) R(cx+x,by-h,1,h,sh(x>18+(hash(x,0)%14)?"#5d8052":"#6e9c5a"));
+  }
+  // switchback road, zig-zagging down the face
+  const pts=[[0,-62],[26,-52],[-26,-41],[26,-30],[-24,-19],[18,-8],[0,-2]];
+  for(let i=0;i<pts.length-1;i++){
+    L(cx+pts[i][0],by+pts[i][1],cx+pts[i+1][0],by+pts[i+1][1],sh("#d8d2c8"),2);
+  }
+  // hydrangea hedges along every bend 🌸
+  const flow=["#e08bb0","#c46a9c","#9c8bd0"];
+  for(let i=1;i<pts.length-1;i++){
+    for(let k=-1;k<=4;k++){
+      P(cx+pts[i][0]*0.8+k,by+pts[i][1]-2,sh(flow[hash(i,k)%3]));
+      P(cx+pts[i][0]*0.8+k,by+pts[i][1]-3,sh(flow[hash(k,i)%3]));
+    }
+  }
+  // flanking houses
+  for(const s of [-1,1]){
+    const hx=cx+s*92;
+    R(hx-10,by-26,20,26,sh(s<0?"#e8d8a8":"#e0a3b8"));
+    for(let r2=0;r2<5;r2++) R(hx-10+(4-r2),by-31+r2,20-(4-r2)*2,1,sh("#5c4668"));
+    R(hx-6,by-20,5,6,lit>0?"#ffd98a":sh("#5e7898",0.9));
+    R(hx+2,by-20,5,6,sh("#5e7898",0.9));
+  }
+}
+
+/* --- 4. Ferry Building (midday) ----------------------------- */
+function drawFerry(cx,by,now,lit){
+  const bw=150, ty=by-24;
+  R(cx-bw/2,ty,bw,24,sh("#ddd3c2"));
+  R(cx-bw/2,ty,bw,2,sh("#b8a890"));              // roofline
+  // repeating arched arcade
+  for(let x=cx-bw/2+5;x<cx+bw/2-6;x+=10){
+    R(x,ty+8,6,14,sh("#8a8276",0.85));
+    R(x+1,ty+6,4,2,sh("#8a8276",0.85));
+    if(lit>0&&hash(x,1)<500){ b.globalAlpha=lit; R(x+1,ty+9,4,8,"#ffd98a"); b.globalAlpha=1; }
+  }
+  // the clock tower
+  const tx=cx-8, th=58;
+  R(tx,by-th,16,th,sh("#e4dbca"));
+  R(tx+12,by-th,4,th,sh("#b8a890"));
+  R(tx-1,by-th,18,3,sh("#c8b8a0"));
+  // arched colonnade top
+  for(let k=0;k<3;k++) R(tx+2+k*5,by-th+6,3,7,sh("#8a8276",0.85));
+  // clock face
+  R(tx+4,by-th+18,8,8,"#f7f0e0");
+  R(tx+5,by-th+19,6,6,sh("#fffdf4"));
+  L(tx+8,by-th+22,tx+8,by-th+19,"#3c3430");      // hands
+  L(tx+8,by-th+22,tx+10,by-th+22,"#3c3430");
+  // flagpole + flag
+  L(tx+8,by-th-8,tx+8,by-th,sh("#8a8276"));
+  R(tx+9,by-th-8,6,3,sh("#c05a72"));
+}
+
+/* --- 5. Dolores Park (afternoon) ----------------------------- */
+function drawDolores(cx,by,now,lit){
+  // sloping lawn, tapered at the edges so it reads as a hill
+  for(let x=-85;x<=85;x++){
+    let h=26+x*0.18+6*Math.sin(x*0.05);
+    h*=Math.pow(clamp((88-Math.abs(x))/30,0,1),0.6);
+    if(h>1) R(cx+x,by-h,1,h,sh("#7da45e"));
+  }
+  // palm trees along the path
+  for(const px of [-58,-20,34,66]){
+    const ph=20+ (hash(px,2)%6), tx=cx+px, ty=by-(20+px*0.15);
+    for(let k=0;k<ph;k++) P(tx+Math.sin(k*0.22)*1,ty-k,sh("#8a6a4a"));
+    const top=ty-ph;
+    for(let fa=0;fa<7;fa++){
+      const ang=fa/7*6.283+0.3;
+      L(tx,top,tx+Math.cos(ang)*9,top+Math.abs(Math.sin(ang))*5-2,sh("#4a7a46"),1);
+      L(tx,top,tx+Math.cos(ang)*5,top+Math.abs(Math.sin(ang))*3-2,sh("#5c8a50"),1);
+    }
+  }
+  // picnic blanket + two tiny figures 🧺
+  const bx=cx+6, byy=by-34;
+  for(let yy=0;yy<5;yy++)for(let xx=0;xx<12;xx++)
+    P(bx+xx,byy+yy,( (xx>>1)+(yy>>1) )%2?sh("#e8556a"):sh("#fff2e0"));
+  R(bx+2,byy-4,3,4,sh("#3e8a96")); P(bx+3,byy-7,sh("#f2c098")); P(bx+3,byy-8,sh("#2e2430")); // figure A
+  R(bx+7,byy-4,3,4,sh("#e89a4a")); P(bx+8,byy-7,sh("#f2c098")); R(bx+8,byy-9,2,2,sh("#6e4630")); // figure B
+  R(bx+13,byy-3,4,3,sh("#a8763e"));              // basket
+  P(bx+5,byy-10,"#ff7b9c");                       // a lil heart
+}
+
+/* --- 6. Lands End / Sutro Baths (golden hour) ---------------- */
+function drawSutro(cx,by,now,lit){
+  // cliff rising on the right, hash-mottled rock
+  for(let x=0;x<=58;x++){
+    const h=10+x*0.72+6*Math.sin(x*0.13);
+    R(cx+34+x,by-h,1,h,sh(hash(x,17)%10<3?"#5c4438":"#6a5448"));
+    R(cx+34+x,by-h,1,2,sh("#5c7048"));            // grassy headland cap
+  }
+  // cypress leaning off the clifftop
+  L(cx+88,by-54,cx+88,by-46,sh("#4a3a2c"));
+  R(cx+84,by-62,9,8,sh("#3e5c3a")); R(cx+86,by-65,5,4,sh("#3e5c3a"));
+  // sutro baths ruins: long low walls + uprights
+  const wall=sh("#d8c8a8",1.05), wallD=sh("#a89878");
+  R(cx-88,by-7,92,3,wall);
+  R(cx-88,by-26,3,20,wall); R(cx-54,by-20,3,14,wall);
+  R(cx-22,by-16,3,10,wall); R(cx+2,by-12,2,6,wallD);
+  R(cx-82,by-13,26,2,wallD); R(cx-48,by-11,22,2,wallD);
+  // the pools, catching the golden-hour sky 🌇
+  R(cx-84,by-4,34,3,sh("#f4a868",1.15));
+  R(cx-46,by-4,28,3,sh("#e8b070",1.05));
+  R(cx-14,by-4,14,3,sh("#d8a070",0.95));
+  for(let k=0;k<5;k++){                            // pool glints
+    if(Math.sin(now*0.004+k*1.7)>0.1)
+      P(cx-80+k*16+(hash(k,3)%6),by-4,sh("#ffe9a8",1.2));
+  }
+  // birds heading home
+  for(let k=0;k<3;k++){
+    const bx2=cx-30+k*22+Math.sin(now*0.001+k)*8, by2=by-62-k*7+Math.cos(now*0.0013+k)*3;
+    const fl=Math.sin(now*0.012+k*2)>0?1:0;
+    P(bx2,by2,sh("#2e2430")); P(bx2-1,by2-fl,sh("#2e2430")); P(bx2+1,by2-fl,sh("#2e2430"));
+  }
+}
+
+/* --- 7. Coit Tower + skyline (night) -------------------------- */
+const CITY=[[-150,14,26],[-128,18,40],[-104,12,30],[-88,14,52],[-60,16,38],[-30,12,46],[14,16,34],[36,14,58],[58,12,28],[76,18,44],[100,12,36],[120,16,24]];
+function drawCoit(cx,by,now,lit){
+  // downtown skyline silhouette behind the hill
+  for(const [dx,wd,ht] of CITY){
+    R(cx+dx,by-ht-20,wd,ht+20,sh("#252e54",0.9));
+    // window grid — most lit, a few twinkle on/off
+    for(let wy2=by-ht-16;wy2<by-26;wy2+=4)for(let wx2=cx+dx+2;wx2<cx+dx+wd-2;wx2+=3){
+      const hsh=hash(wx2,wy2);
+      if(hsh<480){
+        const blink=hsh<60?(((now/700|0)+hsh)%5>0):true;
+        if(blink){ b.globalAlpha=Math.max(lit,0.12); P(wx2,wy2,"#ffd060"); b.globalAlpha=1; }
+      }
+    }
+  }
+  // Transamerica Pyramid
+  for(let k=0;k<46;k++){
+    const w=Math.max(1,18-k*0.38);
+    R(cx-3-w/2,by-22-k,w,1,sh("#2e3a66",0.95));
+  }
+  b.globalAlpha=Math.max(lit*0.9,0.1); P(cx-3,by-69,"#ff6868"); b.globalAlpha=1; // beacon
+  // Telegraph Hill
+  for(let x=-46;x<=46;x++){
+    const h=30*(1-(x*x)/(46*46));
+    if(h>1) R(cx+x+44,by-h-18,1,h+18,sh("#3a4a3c",0.8));
+  }
+  // Coit Tower
+  const tx=cx+38, th=54, ty=by-46-th;
+  R(tx,ty,12,th,sh("#cfc6b4"));
+  R(tx+9,ty,3,th,sh("#9a9282"));                 // shading
+  R(tx-1,ty+6,14,2,sh("#9a9282"));
+  // observation arches
+  for(let k=0;k<3;k++){
+    R(tx+1+k*4,ty+1,2,4,lit>0?"#ffd98a":sh("#6e6658"));
+  }
+  R(tx-1,ty-2,14,2,sh("#cfc6b4"));
+  // floodlight glow at night
+  if(lit>0.3){
+    b.globalAlpha=lit*0.25;
+    R(tx-3,ty,18,th,"#ffe9b0");
+    b.globalAlpha=1;
+  }
+}
+
+/* --- 8. house (final scene) ---------------------------------
+   A little house, lights on, door open at the end of the road. */
+function drawHome(cx,by,now,lit){
+  const wall=sh("#8a6a52",0.95), wallD=sh("#6e5440",0.85), roof=sh("#43344a");
+  // warm light spilling from the open door onto the grass (dithered fan)
+  b.fillStyle="#ffd98a";
+  b.globalAlpha=0.4;
+  for(let k=1;k<=6;k++){
+    const w=4+k*2.2;
+    for(let x=Math.round(-w);x<=w;x++){
+      if((((cx-1+x)|0)+(by+k))&1) continue;       // 50% dither
+      b.fillRect(cx-1+x|0,by+k,1,1);
+    }
+  }
+  b.globalAlpha=1;
+  // chimney (behind the roof) + drifting smoke puffs
+  R(cx+8,by-36,4,9,wallD);
+  for(let k=0;k<3;k++){
+    const ph=((now*0.00055)+k*0.33)%1;
+    b.globalAlpha=(1-ph)*0.45;
+    b.fillStyle=sh("#b8b0c0");
+    b.fillRect(cx+9+Math.sin(ph*6.28+k*2)*2|0,by-38-ph*13|0,2,2);
+  }
+  b.globalAlpha=1;
+  // walls + gabled roof
+  R(cx-16,by-20,32,20,wall);
+  R(cx+12,by-20,4,20,wallD);                       // shaded side
+  for(let r2=0;r2<=10;r2++) R(cx-4-r2*1.5,by-30+r2,8+r2*3,1,roof);
+  R(cx-5,by-30,10,1,sh("#5c4668"));                // ridge highlight
+  // open door: glowing doorway + door panel swung against the wall
+  R(cx-5,by-11,8,11,wallD);                        // door frame
+  R(cx-4,by-10,6,10,"#ffd98a");                    // light inside!
+  R(cx-3,by-10,4,3,"#ffeec2");                     // lamp glow up top
+  R(cx-10,by-10,4,10,sh("#54402f",0.9));           // the open door
+  P(cx-9,by-6,"#ffd98a");                          // brass handle
+  // windows, lit and flickering ever so slightly
+  const wA=0.85+0.15*Math.sin(now*0.003);
+  b.globalAlpha=wA;
+  R(cx+5,by-16,7,6,"#ffd98a");
+  R(cx-2,by-26,4,4,"#ffd98a");                     // little gable window
+  b.globalAlpha=1;
+  P(cx+8,by-16,sh("#54402f"));                     // window mullions
+  R(cx+5,by-14,7,1,sh("#54402f"));
+  // stone path from the road up to the door
+  for(let k=0;k<5;k++) R(cx-3+((k&1)?1:-1),by+1+k*1.5,5,1,sh("#9a8f96",0.9));
+  // a tiny heart over the doorway, obviously
+  P(cx-2,by-14,"#ff7b9c"); P(cx,by-14,"#ff7b9c"); P(cx-1,by-13,"#ff7b9c");
+}
+
+/* landmark registry: scroll index 1..7 → draw fn */
+const LANDMARKS=[null,drawGGB,drawLadies,drawLombard,drawFerry,drawDolores,drawSutro,drawCoit];
+function renderLandmarks(t,now,camX){
+  const lit=Math.max(clamp((t-0.76)/0.1,0,1),clamp((0.07-t)/0.07,0,1)); // night + predawn windows
+  for(let i=1;i<=7;i++){
+    // positioned so landmark i is centered exactly when section i snaps
+    const sx=W/2+810*i-camX*PF_MID;
+    if(sx<-260||sx>W+260) continue;              // off-screen: skip
+    LANDMARKS[i](sx,gy+6,now,lit);
+  }
+  // house: scrolls in bottom-right during the closing card
+  const hx=W*0.8+810*8-camX*PF_MID;
+  if(hx>-260&&hx<W+260) drawHome(hx,gy+6,now,lit);
+}
+/* ============================================================
+   9. THE TANDEM BIKE — two riders, front and back,
+   both smiling, legs pedaling with the scroll.
+   ============================================================ */
+const FRONT={skin:"#f2c098",shirt:"#3e8a96",pants:"#2e3444",hair:"#2e2430",long:false};
+const BACK ={skin:"#f2c098",shirt:"#e8788a",pants:"#5c4668",hair:"#6e4630",long:true};
+
+function drawRider(hipX,hipY,shX,shY,gripX,gripY,bbX,bbY,ped,cfg,now){
+  const skin=sh(cfg.skin),shirt=sh(cfg.shirt),pants=sh(cfg.pants),hair=sh(cfg.hair);
+  const pantsD=sh(cfg.pants,0.7),shirtD=sh(cfg.shirt,0.78);
+  // legs — far side first (darker), simple knee IK toward the front
+  for(const side of [1,0]){
+    const a=ped+side*Math.PI;
+    const px2=bbX+Math.cos(a)*4, py2=bbY+Math.sin(a)*4;
+    const dx=px2-hipX, dy=py2-hipY, m=Math.hypot(dx,dy)||1;
+    let nx=dy/m, ny=-dx/m;
+    if(nx<0){nx=-nx;ny=-ny;}
+    const kx=(hipX+px2)/2+nx*3, ky=(hipY+py2)/2+ny*3;
+    const c=side?pantsD:pants;
+    L(hipX,hipY,kx,ky,c,2);
+    L(kx,ky,px2,py2,c,2);
+    R(px2-1,py2,3,1,side?"#1c1626":"#2e2430");           // shoe on pedal
+  }
+  L(hipX,hipY,shX,shY,shirt,2);                          // torso, leaning in
+  L(shX,shY,gripX,gripY,shirtD,1); P(gripX,gripY,skin);  // arm + hand
+  // head (5×5), facing right
+  const hx0=shX-1, hy0=shY-10;
+  R(hx0,hy0,5,5,skin);
+  R(hx0,hy0-1,5,2,hair);
+  R(hx0,hy0+1,1,3,hair);
+  if(cfg.long){                                          // long hair flutters
+    const sw=Math.round(Math.sin(now*0.004)*1);
+    R(hx0-1,hy0,2,5,hair);
+    P(hx0-2,hy0+3+sw,hair); P(hx0-3,hy0+4+sw,hair); P(hx0-2,hy0+5+sw,hair);
+  }
+  P(hx0+3,hy0+2,"#2e2430");                              // eye
+  P(hx0+3,hy0+4,sh("#c05a48")); P(hx0+4,hy0+3,sh("#c05a48")); // the smile :)
+}
+
+function drawBike(bx,by2,wrot,ped,now){
+  const X=x=>bx+x, Y=y=>by2+y;
+  const frame=sh("#d4543c"), frameD=sh("#9c3a28");
+  // wheels: tire ring + rotating spokes
+  for(const wx of [0,30]){
+    CIRC(X(wx),Y(0),7,"#241e30"); CIRC(X(wx),Y(0),6,"#241e30");
+    for(let k=0;k<3;k++){
+      const a=wrot+k*Math.PI/3;
+      L(X(wx)-Math.cos(a)*5,Y(0)-Math.sin(a)*5,X(wx)+Math.cos(a)*5,Y(0)+Math.sin(a)*5,sh("#8a8496"));
+    }
+    P(X(wx),Y(0),frameD);
+  }
+  // tandem frame
+  L(X(0),Y(0),X(8),Y(-1),frame);
+  L(X(8),Y(-1),X(20),Y(-1),frame);
+  L(X(0),Y(0),X(5),Y(-12),frame);
+  L(X(8),Y(-1),X(5),Y(-13),frame);
+  L(X(20),Y(-1),X(17),Y(-13),frame);
+  L(X(5),Y(-12),X(17),Y(-12),frame);
+  L(X(17),Y(-12),X(27),Y(-12),frame);
+  L(X(20),Y(-1),X(27),Y(-12),frame);
+  L(X(27),Y(-12),X(30),Y(0),frame);
+  L(X(26),Y(-14),X(28),Y(-12),frame);                    // captain's bars
+  L(X(15),Y(-14),X(16),Y(-12),frame);                    // stoker's bars
+  R(X(19),Y(-2),3,3,frameD);                             // chainring
+  R(X(3),Y(-15),5,2,"#2e2430"); R(X(15),Y(-15),5,2,"#2e2430"); // seats
+  // front basket with flowers, obviously
+  R(X(29),Y(-11),4,3,sh("#a8763e"));
+  P(X(30),Y(-12),sh("#e08bb0")); P(X(32),Y(-12),sh("#ffd98a"));
+  // riders — back rider behind, front rider pedaling up front
+  drawRider(X(5),Y(-15),X(11),Y(-23),X(15),Y(-14),X(8),Y(-1),ped,BACK,now);
+  drawRider(X(17),Y(-15),X(23),Y(-23),X(26),Y(-14),X(20),Y(-1),ped,FRONT,now);
+}
+
+/* ---- floating hearts 💛 ------------------------------------ */
+const HEART_PX=[[0,0],[2,0],[0,1],[1,1],[2,1],[1,2]];
+let hearts=[],lastHeart=0;
+function updateHearts(dt){
+  for(const h of hearts) h.age+=dt/16;
+  hearts=hearts.filter(h=>h.age<130);
+}
+function drawHearts(){
+  for(const h of hearts){
+    const a=clamp(1-h.age/130,0,1);
+    const hy=h.y-h.age*0.18, hx=h.x+Math.sin(h.age*0.08)*1.5;
+    b.globalAlpha=a;
+    for(const [px2,py2] of HEART_PX) P(hx+px2,hy+py2,h.c);
+    b.globalAlpha=1;
+  }
+}
+
+/* ============================================================
+   10. MAIN LOOP — everything keys off smoothed scroll progress.
+   Scroll is read inside rAF (never raw scroll events) so the
+   ride stays buttery at 60fps.
+   ============================================================ */
+let smoothT=0, prevT=0, lead=0, lastNow=0;
+
+function frame(now){
+  const dt=Math.min(50,(now-lastNow)||16); lastNow=now;
+
+  // smoothed scroll progress 0..1 across the whole page
+  const maxScroll=document.documentElement.scrollHeight-innerHeight;
+  const target=maxScroll>0?clamp(scrollY/maxScroll,0,1):0;
+  smoothT+=(target-smoothT)*(1-Math.exp(-dt*0.0065));
+  if(Math.abs(target-smoothT)<0.00004) smoothT=target;
+  const t=smoothT;
+  const vel=(t-prevT)/dt; prevT=t;
+
+  // springy lead: the bike surges forward / settles back with speed
+  lead+=(clamp(vel*26000,-12,16)-lead)*(1-Math.exp(-dt*0.008));
+
+  const camX=t*CAM_RANGE;
+  const wrot=camX/7;        // wheel spin matches ground speed (r=7)
+  const ped=camX/26;        // pedal cadence
+
+  // ---- paint the world, back to front ----
+  const sky=renderSky(t,now);
+  renderStars(t,now);
+  renderClouds(t,now,sky.stops,camX);
+  renderFar(t,now,sky.stops,camX,sky.sun);
+
+  // global daylight shading for everything drawn with sh()
+  _B=lerp(BRIGHT[sky.ki],BRIGHT[sky.ki+1],sky.kf);
+  _W=lerp(WARMTH[sky.ki],WARMTH[sky.ki+1],sky.kf);
+
+  renderGround(t,camX,sky.ki,sky.kf);
+  renderLandmarks(t,now,camX);
+
+  const bx=W*0.34+lead;
+  const bob=Math.round(Math.sin(ped*2)*0.9);
+  drawBike(bx,bikeY+bob,wrot,ped,now);
+
+  // hearts drift up from the back seat while riding (and at the end)
+  const moving=Math.abs(vel)>0.000012;
+  if((moving&&now-lastHeart>1500)||(t>0.965&&now-lastHeart>900)){
+    lastHeart=now;
+    hearts.push({x:bx+9,y:bikeY-34,age:0,c:hash(now|0,1)%2?"#ff7b9c":"#ffd060"});
+  }
+  updateHearts(dt);
+  drawHearts();
+
+  // blit the art buffer to screen, scaled with crisp pixels
+  ctx.drawImage(buf,0,0,W,H,0,0,W*S,H*S);
+
+  document.body.classList.toggle("riding",scrollY>40);
+  requestAnimationFrame(frame);
+}
+
+/* ---- caption card reveal ----------------------------------- */
+const obs=new IntersectionObserver(es=>{
+  for(const e of es) e.target.classList.toggle("show",e.isIntersecting);
+},{threshold:0.45});
+document.querySelectorAll("section").forEach(s=>obs.observe(s));
+
+/* ---- go ----------------------------------------------------- */
+resize();
+initClouds();
+// deep-link: open with #t=0.5 to jump straight to that point in the day
+if(location.hash.startsWith("#t=")){
+  const jt=clamp(parseFloat(location.hash.slice(3))||0,0,1);
+  scrollTo(0,jt*(document.documentElement.scrollHeight-innerHeight));
+  smoothT=prevT=jt;
+}
+requestAnimationFrame(frame);
+
+
+
+</script>
+</body>
+</html>
